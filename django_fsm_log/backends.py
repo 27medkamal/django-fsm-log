@@ -1,27 +1,4 @@
 from django_fsm_log.conf import settings
-from .helpers import FSMLogDescriptor
-
-
-def _pre_transition_callback(sender, instance, name, source, target, manager, **kwrags):
-
-    if BaseBackend._get_model_qualified_name__(sender) in settings.DJANGO_FSM_LOG_IGNORED_MODELS:
-        return
-
-    values = {
-        'state': target,
-        'transition': name,
-        'content_object': instance,
-    }
-    try:
-        values['by'] = FSMLogDescriptor(instance, 'by').get()
-    except AttributeError:
-        pass
-    try:
-        values['description'] = FSMLogDescriptor(instance, 'description').get()
-    except AttributeError:
-        pass
-
-    manager.create(**values)
 
 
 class BaseBackend(object):
@@ -44,7 +21,7 @@ class BaseBackend(object):
                           getattr(sender, '__qualname__', sender.__name__))
 
 
-class CachedBackend(BaseBackend):
+class CachedBackend(object):
 
     @staticmethod
     def setup_model(model):
@@ -54,7 +31,16 @@ class CachedBackend(BaseBackend):
     @staticmethod
     def pre_transition_callback(sender, instance, name, source, target, **kwargs):
         from .models import StateLog
-        return _pre_transition_callback(sender, instance, name, source, target, StateLog.pending_objects, **kwargs)
+
+        if BaseBackend._get_model_qualified_name__(sender) in settings.DJANGO_FSM_LOG_IGNORED_MODELS:
+            return
+
+        StateLog.pending_objects.create(
+            by=getattr(instance, 'by', None),
+            state=target,
+            transition=name,
+            content_object=instance,
+        )
 
     @staticmethod
     def post_transition_callback(sender, instance, name, source, target, **kwargs):
@@ -62,7 +48,7 @@ class CachedBackend(BaseBackend):
         StateLog.pending_objects.commit_for_object(instance)
 
 
-class SimpleBackend(BaseBackend):
+class SimpleBackend(object):
 
     @staticmethod
     def setup_model(model):
@@ -75,7 +61,16 @@ class SimpleBackend(BaseBackend):
     @staticmethod
     def post_transition_callback(sender, instance, name, source, target, **kwargs):
         from .models import StateLog
-        return _pre_transition_callback(sender, instance, name, source, target, StateLog.objects, **kwargs)
+
+        if BaseBackend._get_model_qualified_name__(sender) in settings.DJANGO_FSM_LOG_IGNORED_MODELS:
+            return
+
+        StateLog.objects.create(
+            by=getattr(instance, 'by', None),
+            state=target,
+            transition=name,
+            content_object=instance,
+        )
 
 
 if settings.DJANGO_FSM_LOG_STORAGE_METHOD == 'django_fsm_log.backends.CachedBackend':

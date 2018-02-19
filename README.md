@@ -1,4 +1,5 @@
-# Django Finite State Machine Log
+Django Finite State Machine Log
+==============
 
 [![Build Status](https://travis-ci.org/gizmag/django-fsm-log.png?branch=master)](https://travis-ci.org/gizmag/django-fsm-log)
 [![Code Health](https://landscape.io/github/gizmag/django-fsm-log/master/landscape.png)](https://landscape.io/github/gizmag/django-fsm-log/master)
@@ -33,7 +34,6 @@ by enabling a cached backend. See [Advanced Usage](#advanced-usage)
 
 First, install the package with pip. This will automatically install any
 dependencies you may be missing
-
 ```bash
 pip install django-fsm-log
 ```
@@ -49,18 +49,15 @@ INSTALLED_APPS = (
 ```
 
 Then migrate the app to create the database table
-
 ```bash
 python manage.py migrate django_fsm_log
 ```
 
 ## Usage
+The app will listen for `django_fsm.signals.post_transition` to be fired and
+create a new record for each transition.
 
-The app listens for the `django_fsm.signals.post_transition` signal and
-creates a new record for each transition.
-
-To query the log:
-
+To query logs simply
 ```python
 from django_fsm_log.models import StateLog
 StateLog.objects.all()
@@ -69,7 +66,7 @@ StateLog.objects.all()
 
 ### Disabling logging for specific models
 
-By default transitions get recorded for all models. Logging can be disabled for
+By default transitions are logged for all models. Logging can be disabled for
 specific models by adding their fully qualified name to `DJANGO_FSM_LOG_IGNORED_MODELS`.
 
 ```python
@@ -78,8 +75,7 @@ DJANGO_FSM_LOG_IGNORED_MODELS = ('poll.models.Vote')
 
 ### `for_` Manager Method
 
-For convenience there is a custom `for_` manager method to easily filter on the generic foreign key:
-
+For convenience there is a custom `for_` manager method to easily filter on the generic foreign key
 ```python
 from my_app.models import Article
 from django_fsm_log.models import StateLog
@@ -92,8 +88,7 @@ StateLog.objects.for_(article)
 
 ### `by` Decorator
 
-We found that our transitions are commonly called by a user, so we've added a
-decorator to make logging this easy:
+We found that our transitions are commonly called by a user, so we've added a decorator to make logging that painless
 
 ```python
 from django.db import models
@@ -108,9 +103,10 @@ class Article(models.Model):
     @transition(field=state, source='draft', target='submitted')
     def submit(self, by=None):
         pass
+
 ```
 
-With this the transition gets logged when the `by` kwarg is present.
+Then every time the transition is called with the `by` kwarg set, it will be logged
 
 ```python
 article = Article.objects.create()
@@ -129,12 +125,10 @@ from django_fsm_log.admin import StateLogInline
 
 
 @admin.register(FSMModel)
-class FSMModelAdmin(admin.ModelAdmin):
+class FSMModel(admin.ModelAdmin):
     inlines = [StateLogInline]
 ```
-
 ### Advanced Usage
-
 You can change the behaviour of this app by turning on caching for StateLog records.
 Simply add `DJANGO_FSM_LOG_STORAGE_METHOD = 'django_fsm_log.backends.CachedBackend'` to your project's settings file.
 It will use your project's default cache backend by default. If you wish to use a specific cache backend, you can add to
@@ -160,9 +154,10 @@ article = Article.objects.get(...)
 pending_state_log = StateLog.pending_objects.get_for_object(article)
 ```
 
+
 ## Running Tests
 
 ```bash
-pip install tox
-tox
+$ pip install tox
+$ tox
 ```
